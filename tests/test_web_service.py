@@ -12,6 +12,7 @@ def test_home_route_returns_page() -> None:
     assert "Make AI Coding" in response.text
     assert "8 presets" in response.text
     assert "결과 복사" in response.text
+    assert "lang-en" in response.text
 
 
 def test_generate_route_returns_prompt_content() -> None:
@@ -31,3 +32,4 @@ def test_generate_route_can_render_english_output() -> None:
     assert response.status_code == 200
     assert "Task Interpretation" in response.text
     assert "Copy result" in response.text
+    assert "create a website landing page" in response.text

@@ -70,6 +70,7 @@ def render_page(
     result_label = "Generated Package" if safe_language == "en" else "생성 결과"
     helper_title = "Extra Controls" if safe_language == "en" else "추가 옵션"
     input_title = "Task Input" if safe_language == "en" else "작업 입력"
+    language_label = "Output Language" if safe_language == "en" else "출력 언어"
     skill_badges = "".join(
         f'<span class="badge">{escape(skill)}</span>' for skill in skills
     ) or '<span class="badge muted">base workflow</span>'
@@ -92,8 +93,6 @@ def render_page(
         )
         for value in presets
     )
-    korean_selected = "selected" if safe_language == "ko" else ""
-    english_selected = "selected" if safe_language == "en" else ""
 
     return f"""
     <!DOCTYPE html>
@@ -213,19 +212,34 @@ def render_page(
         }}
         .field-row {{
           display: grid;
-          grid-template-columns: 1fr auto;
+          grid-template-columns: 1.1fr auto;
           gap: 12px;
           align-items: end;
           margin-bottom: 12px;
         }}
-        select {{
-          min-width: 150px;
-          border-radius: 14px;
+        .toggle-group {{
+          display: inline-grid;
+          grid-template-columns: 1fr 1fr;
+          padding: 6px;
+          border-radius: 18px;
           border: 1px solid var(--line);
           background: rgba(255, 255, 255, 0.03);
-          color: var(--text);
-          padding: 12px 14px;
+          gap: 6px;
+        }}
+        .toggle-button {{
+          width: auto;
+          margin-top: 0;
+          padding: 10px 16px;
+          border-radius: 12px;
+          border: 1px solid transparent;
+          background: transparent;
+          color: var(--muted);
           font-size: 14px;
+          font-weight: 700;
+        }}
+        .toggle-button.active {{
+          background: linear-gradient(90deg, var(--accent), #64f4d0);
+          color: #071019;
         }}
         .chip-wrap {{
           display: flex;
@@ -316,11 +330,27 @@ def render_page(
             <form method="get" action="/generate">
               <div class="field-row">
                 <div>
-                  <div class="section" style="margin-bottom: 6px;">Output Language</div>
-                  <select name="output_language">
-                    <option value="ko" {korean_selected}>Korean</option>
-                    <option value="en" {english_selected}>English</option>
-                  </select>
+                  <div class="section" style="margin-bottom: 6px;">{language_label}</div>
+                  <input
+                    type="hidden"
+                    id="output-language"
+                    name="output_language"
+                    value="{safe_language}"
+                  />
+                  <div class="toggle-group">
+                    <button
+                      type="button"
+                      id="lang-ko"
+                      class="toggle-button {"active" if safe_language == "ko" else ""}"
+                      onclick="setLanguage('ko')"
+                    >Korean</button>
+                    <button
+                      type="button"
+                      id="lang-en"
+                      class="toggle-button {"active" if safe_language == "en" else ""}"
+                      onclick="setLanguage('en')"
+                    >English</button>
+                  </div>
                 </div>
                 <div>
                   <div class="section" style="margin-bottom: 6px;">Preset Choices</div>
@@ -381,8 +411,14 @@ def render_page(
         function applyPreset(value) {{
           document.getElementById('task-input').value = value;
         }}
+        function setLanguage(lang) {{
+          document.getElementById('output-language').value = lang;
+          document.getElementById('lang-ko').classList.toggle('active', lang === 'ko');
+          document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+        }}
         function resetForm() {{
           document.getElementById('task-input').value = '';
+          setLanguage('ko');
           window.location.href = '/';
         }}
         async function copyResult() {{

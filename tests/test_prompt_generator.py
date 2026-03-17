@@ -30,4 +30,4 @@ def test_build_prompt_package_can_render_english_output() -> None:
 
     assert "Task Interpretation" in prompt
     assert "Codex Request" in prompt
-    assert "The current task is `웹사이트 대문 만들기`." in prompt
+    assert "The current task is `create a website landing page`." in prompt

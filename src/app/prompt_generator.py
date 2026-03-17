@@ -225,9 +225,10 @@ def build_prompt_package(task_summary: str, output_language: str = "ko") -> str:
 def build_prompt_package_en(profile: TaskProfile) -> str:
     """Build an English request package while preserving the user's task summary."""
 
+    translated_summary = translate_task_summary(profile.task_summary)
     lines: list[str] = []
     lines.append("Task Interpretation")
-    lines.append(f"- Request summary: {profile.task_summary}")
+    lines.append(f"- Request summary: {translated_summary}")
     lines.append(f"- Inferred task type: {profile.task_type}")
     lines.append(f"- Core focus: {', '.join(to_english_focus(profile.focus_areas))}")
     lines.append("")
@@ -283,8 +284,9 @@ def build_codex_request(profile: TaskProfile) -> str:
 def build_codex_request_en(profile: TaskProfile) -> str:
     """Render the final Codex-ready request in English."""
 
+    translated_summary = translate_task_summary(profile.task_summary)
     lines: list[str] = []
-    lines.append(f"The current task is `{profile.task_summary}`.")
+    lines.append(f"The current task is `{translated_summary}`.")
     lines.append("")
     lines.append("Goals:")
     for item in to_english_focus(profile.focus_areas):
@@ -330,6 +332,49 @@ def normalize_language(output_language: str) -> str:
     """Normalize the requested output language."""
 
     return "en" if output_language.lower().startswith("en") else "ko"
+
+
+def translate_task_summary(task_summary: str) -> str:
+    """Translate a short task summary into rough but usable English."""
+
+    normalized = task_summary.strip()
+    exact_mapping = {
+        "웹사이트 대문 만들기": "create a website landing page",
+        "랜딩 페이지 리디자인하기": "redesign a landing page",
+        "관리자 대시보드 화면 만들기": "create an admin dashboard screen",
+        "OpenAI API 연동 기능 만들기": "build an OpenAI API integration feature",
+        "크롤러 만들기": "build a crawler",
+        "백테스트 시스템 초안 만들기": "create a backtesting system draft",
+        "FastAPI 서버 구조 잡기": "set up a FastAPI server structure",
+        "보안 점검 체크리스트 만들기": "create a security review checklist",
+    }
+    if normalized in exact_mapping:
+        return exact_mapping[normalized]
+
+    translated = normalized
+    replacements = [
+        ("웹사이트", "website"),
+        ("대문", "landing page"),
+        ("랜딩 페이지", "landing page"),
+        ("관리자", "admin"),
+        ("대시보드", "dashboard"),
+        ("화면", "screen"),
+        ("연동 기능", "integration feature"),
+        ("크롤러", "crawler"),
+        ("백테스트", "backtesting"),
+        ("시스템", "system"),
+        ("초안", "draft"),
+        ("서버 구조", "server structure"),
+        ("보안 점검", "security review"),
+        ("체크리스트", "checklist"),
+        ("만들기", "build"),
+        ("리디자인하기", "redesign"),
+        ("구조 잡기", "set up the structure"),
+    ]
+    for old, new in replacements:
+        translated = translated.replace(old, new)
+    translated = " ".join(translated.split())
+    return translated if translated != normalized else f"work on: {task_summary}"
 
 
 def to_english_focus(values: list[str]) -> list[str]:
