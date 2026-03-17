@@ -23,3 +23,11 @@ def test_build_prompt_package_contains_codex_request_sections() -> None:
     assert "추천 스킬/도구" in prompt
     assert "Codex 요청문" in prompt
     assert "현재 작업은 `웹사이트 대문 만들기` 입니다." in prompt
+
+
+def test_build_prompt_package_can_render_english_output() -> None:
+    prompt = build_prompt_package("웹사이트 대문 만들기", output_language="en")
+
+    assert "Task Interpretation" in prompt
+    assert "Codex Request" in prompt
+    assert "The current task is `웹사이트 대문 만들기`." in prompt

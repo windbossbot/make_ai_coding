@@ -16,11 +16,17 @@ app = FastAPI(title="Make AI Coding", version="0.2.0")
 def home() -> str:
     """Render the main prompt generator page."""
 
-    return render_page(task_summary="", prompt_package="", task_type="", skills=[])
+    return render_page(
+        task_summary="",
+        prompt_package="",
+        task_type="",
+        skills=[],
+        output_language="ko",
+    )
 
 
 @app.get("/generate", response_class=HTMLResponse)
-def generate(task: str = "") -> str:
+def generate(task: str = "", output_language: str = "ko") -> str:
     """Generate a prompt package from form input."""
 
     cleaned_task = task.strip()
@@ -30,15 +36,17 @@ def generate(task: str = "") -> str:
             prompt_package="작업 설명을 입력해 주세요.",
             task_type="general",
             skills=[],
+            output_language=output_language,
         )
 
     profile = infer_task_profile(cleaned_task)
-    prompt_package = build_prompt_package(cleaned_task)
+    prompt_package = build_prompt_package(cleaned_task, output_language=output_language)
     return render_page(
         task_summary=cleaned_task,
         prompt_package=prompt_package,
         task_type=profile.task_type,
         skills=profile.suggested_skills,
+        output_language=output_language,
     )
 
 
@@ -48,17 +56,44 @@ def render_page(
     prompt_package: str,
     task_type: str,
     skills: list[str],
+    output_language: str,
 ) -> str:
     """Build the HTML page for the prompt generator."""
 
     safe_task = escape(task_summary)
     safe_prompt = escape(prompt_package)
     safe_task_type = escape(task_type or "ready")
+    safe_language = "en" if output_language.lower().startswith("en") else "ko"
+    copy_label = "Copy result" if safe_language == "en" else "결과 복사"
+    reset_label = "Reset" if safe_language == "en" else "초기화"
+    generate_label = "Generate prompt" if safe_language == "en" else "요청문 생성"
+    result_label = "Generated Package" if safe_language == "en" else "생성 결과"
+    helper_title = "Extra Controls" if safe_language == "en" else "추가 옵션"
+    input_title = "Task Input" if safe_language == "en" else "작업 입력"
     skill_badges = "".join(
         f'<span class="badge">{escape(skill)}</span>' for skill in skills
     ) or '<span class="badge muted">base workflow</span>'
     empty_state = '<div class="empty">작업 설명을 입력하면 결과가 여기에 표시됩니다.</div>'
     prompt_block = f"<pre>{safe_prompt}</pre>" if prompt_package else empty_state
+    presets = [
+        "웹사이트 대문 만들기",
+        "랜딩 페이지 리디자인하기",
+        "관리자 대시보드 화면 만들기",
+        "OpenAI API 연동 기능 만들기",
+        "크롤러 만들기",
+        "백테스트 시스템 초안 만들기",
+        "FastAPI 서버 구조 잡기",
+        "보안 점검 체크리스트 만들기",
+    ]
+    preset_buttons = "".join(
+        (
+            '<button type="button" class="chip" '
+            f'onclick="applyPreset(\'{escape_js(value)}\')">{escape(value)}</button>'
+        )
+        for value in presets
+    )
+    korean_selected = "selected" if safe_language == "ko" else ""
+    english_selected = "selected" if safe_language == "en" else ""
 
     return f"""
     <!DOCTYPE html>
@@ -162,6 +197,53 @@ def render_page(
           font-weight: 800;
           cursor: pointer;
         }}
+        .button-row {{
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          margin-top: 12px;
+        }}
+        .button-secondary {{
+          background: transparent;
+          color: var(--text);
+          border: 1px solid var(--line);
+        }}
+        .button-copy {{
+          background: linear-gradient(90deg, var(--accent2), #ffd76b);
+        }}
+        .field-row {{
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 12px;
+          align-items: end;
+          margin-bottom: 12px;
+        }}
+        select {{
+          min-width: 150px;
+          border-radius: 14px;
+          border: 1px solid var(--line);
+          background: rgba(255, 255, 255, 0.03);
+          color: var(--text);
+          padding: 12px 14px;
+          font-size: 14px;
+        }}
+        .chip-wrap {{
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 14px;
+        }}
+        .chip {{
+          width: auto;
+          margin-top: 0;
+          padding: 10px 14px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--text);
+          border: 1px solid var(--line);
+          font-size: 13px;
+          font-weight: 600;
+        }}
         .meta {{
           display: flex;
           flex-wrap: wrap;
@@ -221,7 +303,7 @@ def render_page(
       <main class="shell">
         <section class="hero">
           <div class="eyebrow">Prompt Engine</div>
-          <h1>짧게 쓰면, Codex용 요청문으로 확장합니다.</h1>
+            <h1>짧게 쓰면, Codex용 요청문으로 확장합니다.</h1>
           <p class="lede">
             작업 설명 한 줄만 입력하면 작업 유형, 추천 스킬, 보안 규칙, 품질 기준,
             검증 포인트까지 묶어서 바로 붙여넣을 수 있는 요청문을 생성합니다.
@@ -230,33 +312,91 @@ def render_page(
 
         <section class="grid">
           <div class="panel">
-            <div class="section">Task Input</div>
+            <div class="section">{input_title}</div>
             <form method="get" action="/generate">
-              <textarea name="task" placeholder="예: 웹사이트 대문 만들기">{safe_task}</textarea>
-              <button type="submit">요청문 생성</button>
+              <div class="field-row">
+                <div>
+                  <div class="section" style="margin-bottom: 6px;">Output Language</div>
+                  <select name="output_language">
+                    <option value="ko" {korean_selected}>Korean</option>
+                    <option value="en" {english_selected}>English</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="section" style="margin-bottom: 6px;">Preset Choices</div>
+                  <span class="badge">8 presets</span>
+                </div>
+              </div>
+              <textarea
+                id="task-input"
+                name="task"
+                placeholder="예: 웹사이트 대문 만들기"
+              >{safe_task}</textarea>
+              <div class="button-row">
+                <button type="submit">{generate_label}</button>
+                <button
+                  type="button"
+                  class="button-secondary"
+                  onclick="resetForm()"
+                >{reset_label}</button>
+              </div>
             </form>
+            <div class="chip-wrap">
+              {preset_buttons}
+            </div>
           </div>
 
           <div class="panel">
-            <div class="section">What This Adds</div>
+            <div class="section">{helper_title}</div>
             <ul class="helper-list">
               <li>작업 유형 자동 분류</li>
               <li>필요한 스킬과 도구 추천</li>
               <li>보안, 품질, 운영 규칙 자동 결합</li>
               <li>바로 붙여넣을 수 있는 최종 Codex 요청문 출력</li>
+              <li>결과물만 영어 출력 선택 가능</li>
+              <li>초기화와 복사 버튼 제공</li>
             </ul>
           </div>
         </section>
 
         <section class="panel" style="margin-top: 20px;">
-          <div class="section">Task Meta</div>
+          <div class="section">{result_label}</div>
           <div class="meta">
             <span class="badge">task type: {safe_task_type}</span>
+            <span class="badge">output: {safe_language}</span>
             {skill_badges}
+          </div>
+          <div class="button-row" style="margin-top: 0; margin-bottom: 14px;">
+            <button type="button" class="button-copy" onclick="copyResult()">{copy_label}</button>
+            <button
+              type="button"
+              class="button-secondary"
+              onclick="window.location.href='/'"
+            >{reset_label}</button>
           </div>
           {prompt_block}
         </section>
       </main>
+      <script>
+        function applyPreset(value) {{
+          document.getElementById('task-input').value = value;
+        }}
+        function resetForm() {{
+          document.getElementById('task-input').value = '';
+          window.location.href = '/';
+        }}
+        async function copyResult() {{
+          const el = document.querySelector('pre');
+          if (!el) return;
+          await navigator.clipboard.writeText(el.innerText);
+        }}
+      </script>
     </body>
     </html>
     """
+
+
+def escape_js(value: str) -> str:
+    """Escape a string for a small inline JavaScript usage."""
+
+    return value.replace("\\", "\\\\").replace("'", "\\'")
