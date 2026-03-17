@@ -35,6 +35,7 @@ pip install -e .[dev]
 copy .env.example .env
 python scripts/run_example.py --mode oneshot --dry-run
 python scripts/generate_prompt.py "웹사이트 대문 만들기"
+streamlit run scripts/web_app.py
 ```
 
 ## 실행 예시
@@ -46,6 +47,11 @@ python scripts/run_example.py --mode oneshot --dry-run
 프롬프트 생성:
 ```bash
 python scripts/generate_prompt.py "웹사이트 대문 만들기"
+```
+
+웹 앱 실행:
+```bash
+streamlit run scripts/web_app.py
 ```
 
 지속성 작업:
@@ -73,6 +79,11 @@ ruff check .
 - 분류: 웹, 백엔드, 자동화, 보안, OpenAI 연동, 트레이딩/백테스트 등
 - 조합: 스킬 추천, 보안 규칙, 품질 규칙, 산출물 형식
 - 출력: 바로 Codex에 붙여넣을 수 있는 요청문
+
+## 배포 메모
+- 웹 서비스 배포 시 `render.yaml`을 사용할 수 있습니다.
+- 시작 명령은 `streamlit run scripts/web_app.py --server.address 0.0.0.0 --server.port $PORT` 입니다.
+- 이전처럼 단발성 스크립트를 실행하면 배포 플랫폼에서 조기 종료로 실패할 수 있습니다.
 
 예시 입력:
 ```text

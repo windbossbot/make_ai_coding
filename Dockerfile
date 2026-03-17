@@ -9,4 +9,6 @@ COPY scripts ./scripts
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
-CMD ["python", "scripts/run_example.py", "--mode", "oneshot", "--dry-run"]
+ENV PORT=8501
+
+CMD ["sh", "-c", "streamlit run scripts/web_app.py --server.address 0.0.0.0 --server.port ${PORT}"]
