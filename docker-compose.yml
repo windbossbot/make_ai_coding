@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./tmp:/app/tmp
+    command: ["python", "scripts/run_example.py", "--mode", "oneshot", "--dry-run"]
