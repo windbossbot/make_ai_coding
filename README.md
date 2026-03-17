@@ -1,7 +1,7 @@
 # Safe Automation Template
 
 운영 자동화, 데이터 처리, 백테스트, 크롤링, 내부 도구를 위한 안전 기본값 템플릿이자,
-짧은 작업 설명을 Codex용 정교한 요청문으로 바꿔주는 프롬프트 생성기입니다.
+짧은 작업 설명을 Codex용 정교한 요청문으로 바꿔주는 웹 서비스형 프롬프트 생성기입니다.
 
 ## 포함된 기본값
 - 시작 시 PID, 실행 명령어, 로그 파일 경로 기록
@@ -35,7 +35,7 @@ pip install -e .[dev]
 copy .env.example .env
 python scripts/run_example.py --mode oneshot --dry-run
 python scripts/generate_prompt.py "웹사이트 대문 만들기"
-streamlit run scripts/web_app.py
+uvicorn app.web_service:app --reload
 ```
 
 ## 실행 예시
@@ -49,9 +49,9 @@ python scripts/run_example.py --mode oneshot --dry-run
 python scripts/generate_prompt.py "웹사이트 대문 만들기"
 ```
 
-웹 앱 실행:
+웹 서비스 실행:
 ```bash
-streamlit run scripts/web_app.py
+uvicorn app.web_service:app --reload
 ```
 
 지속성 작업:
@@ -82,8 +82,9 @@ ruff check .
 
 ## 배포 메모
 - 웹 서비스 배포 시 `render.yaml`을 사용할 수 있습니다.
-- 시작 명령은 `streamlit run scripts/web_app.py --server.address 0.0.0.0 --server.port $PORT` 입니다.
+- 시작 명령은 `uvicorn app.web_service:app --host 0.0.0.0 --port $PORT` 입니다.
 - 이전처럼 단발성 스크립트를 실행하면 배포 플랫폼에서 조기 종료로 실패할 수 있습니다.
+- 루트 `/` 경로에서 바로 HTML 페이지가 열리도록 구성했습니다.
 
 예시 입력:
 ```text

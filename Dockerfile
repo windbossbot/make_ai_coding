@@ -9,6 +9,6 @@ COPY scripts ./scripts
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
-ENV PORT=8501
+ENV PORT=8000
 
-CMD ["sh", "-c", "streamlit run scripts/web_app.py --server.address 0.0.0.0 --server.port ${PORT}"]
+CMD ["sh", "-c", "uvicorn app.web_service:app --host 0.0.0.0 --port ${PORT}"]
